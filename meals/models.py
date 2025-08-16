@@ -104,14 +104,15 @@ class StudentPayment(models.Model):
         help_text="Chọn cấu hình giá ăn áp dụng cho tháng này"
     )
     def save(self, *args, **kwargs):
-        # Tính số dư tháng trước như cũ
+        # Tính số dư tháng trước - LOGIC MỚI: TÌM THÁNG TRƯỚC THEO THỨ TỰ THỜI GIAN
         prior_remain_balance = 0
         if self.month:
-            dt = datetime.strptime(self.month, '%Y-%m')
-            prev_month = (dt.replace(day=1) - timedelta(days=1)).strftime('%Y-%m')
-            prev_payment = StudentPayment.objects.filter(student=self.student, month=prev_month).order_by('-id').first()
-            if prev_payment and prev_payment.remaining_balance:
-                prior_remain_balance = prev_payment.remaining_balance
+            # Tìm tháng TRƯỚC theo thứ tự thời gian (month < self.month)
+            prior_payments = StudentPayment.objects.filter(student=self.student, month__lt=self.month).order_by('-month')
+            if prior_payments.exists():
+                prior_payment = prior_payments.first()
+                if prior_payment and prior_payment.remaining_balance:
+                    prior_remain_balance = prior_payment.remaining_balance
 
         # Tính tổng tiền ăn thực tế dựa trên MealRecord của tháng hiện tại
         # Ta tách year và month từ self.month
@@ -122,6 +123,7 @@ class StudentPayment(models.Model):
         except Exception:
             year = None
             month = None
+        
         total_meal_charge = 0
         if year and month:
             # Lấy các bản ghi MealRecord cho học sinh trong tháng (chỉ tính các bữa sáng và bữa trưa)

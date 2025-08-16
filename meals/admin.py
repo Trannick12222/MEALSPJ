@@ -311,15 +311,48 @@ class StudentPaymentAdminForm(forms.ModelForm):
 from django.contrib.admin import SimpleListFilter
 
 class StudentPaymentImportForm(forms.Form):
+    term = forms.ChoiceField(
+        label="Niên khóa/Học kỳ",
+        choices=[],
+        required=True,
+        help_text="Chọn niên khóa để lọc danh sách lớp"
+    )
     month = forms.CharField(
         label="Tháng",
-        widget=forms.TextInput(attrs={'type': 'month'})
+        widget=forms.TextInput(attrs={'type': 'month'}),
+        required=True,
+        help_text="Chọn tháng cần import dữ liệu"
     )
-    classroom = forms.ModelChoiceField(
-        queryset=ClassRoom.objects.all(),
-        label="Lớp"
+    classroom = forms.ChoiceField(
+        label="Lớp",
+        choices=[],
+        required=True,
+        help_text="Chọn lớp cần import dữ liệu"
     )
-    file = forms.FileField(label="File Excel")
+    file = forms.FileField(
+        label="File Excel", 
+        required=True,
+        help_text="Chọn file Excel chứa dữ liệu thanh toán"
+    )
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Lấy danh sách niên khóa từ ClassRoom
+        terms = ClassRoom.objects.values_list('term', flat=True).distinct().order_by('-term')
+        term_choices = [('', '--- Chọn Niên khóa ---')] + [(t, t) for t in terms]
+        self.fields['term'].choices = term_choices
+        
+        # Khởi tạo classroom choices rỗng
+        self.fields['classroom'].choices = [('', '--- Chọn Lớp ---')]
+        
+        # Nếu có dữ liệu POST, cập nhật classroom choices
+        if 'term' in self.data:
+            selected_term = self.data.get('term')
+            if selected_term:
+                classrooms = ClassRoom.objects.filter(term=selected_term).order_by('name')
+                classroom_choices = [('', '--- Chọn Lớp ---')] + [(c.id, c.name) for c in classrooms]
+                self.fields['classroom'].choices = classroom_choices
 class YearFilter(SimpleListFilter):
     title            = 'Năm'
     parameter_name   = 'year'
@@ -424,6 +457,11 @@ class StudentPaymentAdmin(admin.ModelAdmin):
                 self.admin_site.admin_view(self.import_payments_view),
                 name='meals_studentpayment_import'
             ),
+            path(
+                'get-classrooms-by-term/',
+                self.admin_site.admin_view(self.get_classrooms_by_term_view),
+                name='meals_studentpayment_get_classrooms'
+            ),
         ]
         return custom + urls
 
@@ -432,7 +470,16 @@ class StudentPaymentAdmin(admin.ModelAdmin):
             form = StudentPaymentImportForm(request.POST, request.FILES)
             if form.is_valid():
                 month = form.cleaned_data['month']
-                classroom = form.cleaned_data['classroom']
+                term = form.cleaned_data['term']
+                classroom_id = form.cleaned_data['classroom']
+                
+                # Lấy classroom object từ ID
+                try:
+                    classroom = ClassRoom.objects.get(id=classroom_id)
+                except ClassRoom.DoesNotExist:
+                    self.message_user(request, "Lớp học không tồn tại.", level=messages.ERROR)
+                    return redirect('.')
+                
                 wb = openpyxl.load_workbook(request.FILES['file'])
                 sheet = wb.active
 
@@ -514,6 +561,23 @@ class StudentPaymentAdmin(admin.ModelAdmin):
             title="Import tiền đã đóng học sinh"
         )
         return TemplateResponse(request, "admin/meals/import_payments.html", context)
+
+    def get_classrooms_by_term_view(self, request):
+        """API endpoint để lấy danh sách lớp theo niên khóa"""
+        from django.http import JsonResponse
+        
+        term = request.GET.get('term')
+        if not term:
+            return JsonResponse([], safe=False)
+
+        classrooms = ClassRoom.objects.filter(term=term).order_by('name')
+        data = []
+        for cls in classrooms:
+            data.append({
+                'id': cls.id,
+                'name': cls.name
+            })
+        return JsonResponse(data, safe=False)
     def delete_model(self, request, obj):
         log_admin_action(request, obj, 'delete', extra={
             'student_name':   obj.student.name,
