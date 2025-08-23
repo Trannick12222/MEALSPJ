@@ -2,6 +2,8 @@
 {% extends "admin/base_site.html" %}
 {% load static %}
 
+{% block title %}Import Dữ Liệu Thanh Toán{% endblock %}
+
 {% block extrahead %}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -87,33 +89,13 @@
 }
 
 body {
-    background: linear-gradient(135deg, var(--primary-600) 0%, var(--secondary-600) 50%, var(--primary-800) 100%);
-    background-attachment: fixed;
-    min-height: 100vh;
     font-family: var(--font-sans);
     margin: 0;
-    padding: var(--space-6);
+    padding: 0;
     position: relative;
 }
 
-body::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: 
-        radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
-        radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
-        radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.2) 0%, transparent 50%);
-    pointer-events: none;
-    z-index: -1;
-}
-
 .import-form-container {
-    max-width: 800px;
-    margin: 0 auto;
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(20px) saturate(180%);
     border: 1px solid rgba(255, 255, 255, 0.2);
@@ -1181,15 +1163,174 @@ select {
         color: white;
     }
 }
+
+/* Ẩn header và breadcrumbs mặc định của Django admin */
+#header,
+.breadcrumbs,
+#nav-sidebar,
+#content-header,
+#content-related,
+#branding,
+#user-tools,
+#site-name,
+#content-title,
+#content-subtitle {
+    display: none !important;
+}
+
+/* Ẩn toàn bộ layout mặc định */
+#container {
+    padding: 0 !important;
+    margin: 0 !important;
+    background: none !important;
+}
+
+/* Ẩn tất cả các phần tử có thể hiển thị title */
+h1:not(.custom-page-header h1),
+h2:not(.form-header h2),
+h3,
+h4,
+h5,
+h6 {
+    display: none !important;
+}
+
+/* Ẩn breadcrumbs và navigation */
+.breadcrumbs,
+.nav-breadcrumbs,
+.breadcrumb,
+.nav-breadcrumb {
+    display: none !important;
+}
+
+/* Ẩn tất cả các phần tử admin mặc định */
+.admin-title,
+.page-title,
+.content-title {
+    display: none !important;
+}
+
+#content {
+    padding: 0 !important;
+    margin: 0 !important;
+    background: none !important;
+    min-height: 100vh !important;
+}
+
+/* Ẩn footer mặc định */
+#footer {
+    display: none !important;
+}
+
+/* Custom container cho toàn bộ trang */
+.custom-admin-page {
+    min-height: 100vh;
+    background: linear-gradient(135deg, var(--primary-600) 0%, var(--secondary-600) 50%, var(--primary-800) 100%);
+    background-attachment: fixed;
+    padding: 0;
+    margin: 0;
+    position: relative;
+}
+
+.custom-admin-page::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.2) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: -1;
+}
+
+/* Custom header cho trang */
+.custom-page-header {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 1rem 2rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.custom-page-header h1 {
+    color: white;
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.custom-page-header .back-link {
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    background: rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+}
+
+.custom-page-header .back-link:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+/* Điều chỉnh container chính */
+.import-form-container {
+    margin: 2rem auto;
+    max-width: 900px;
+}
+
+/* Responsive cho header */
+@media (max-width: 768px) {
+    .custom-page-header {
+        padding: 1rem;
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+    
+    .custom-page-header h1 {
+        font-size: 1.25rem;
+    }
+    
+    .import-form-container {
+        margin: 1rem;
+        max-width: none;
+    }
+}
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="import-form-container">
-    <div class="form-header">
-        <h2>🚀 Import Dữ Liệu Thanh Toán</h2>
-        <p>Chọn niên khóa, lớp và tháng để import dữ liệu từ file Excel một cách nhanh chóng và chính xác</p>
+<div class="custom-admin-page">
+    <!-- Custom Header -->
+    <div class="custom-page-header">
+        <h1>
+            <span style="font-size: 1.5rem;">🚀</span>
+            Import Dữ Liệu Thanh Toán
+        </h1>
+        <a href="{% url 'admin:index' %}" class="back-link">
+            ← Quay lại Dashboard
+        </a>
     </div>
+
+    <div class="import-form-container">
+        <div class="form-header">
+            <h2>📊 Import Dữ Liệu Thanh Toán Học Sinh</h2>
+            <p>Chọn niên khóa, lớp và tháng để import dữ liệu từ file Excel một cách nhanh chóng và chính xác</p>
+        </div>
 
     <div class="form-content">
     {% if form.errors %}
@@ -1225,12 +1366,14 @@ select {
         </div>
 
         <div class="form-group">
-             <label for="month_picker">Tháng</label>
+             <label for="{{ form.month.id_for_label }}">{{ form.month.label }}</label>
              <div class="month-picker-wrapper">
-                 <input type="text" name="month" id="month_picker" placeholder="Chọn tháng" required readonly>
+                 {{ form.month }}
                  <div class="month-picker-icon">📅</div>
              </div>
-             <div class="help-text">Chọn tháng cần import dữ liệu</div>
+             {% if form.month.help_text %}
+                 <div class="help-text">{{ form.month.help_text }}</div>
+             {% endif %}
             {% if form.month.errors %}
                 <div class="alert alert-danger">{{ form.month.errors.0 }}</div>
             {% endif %}
@@ -1269,6 +1412,7 @@ select {
         </div>
     </div>
 </div>
+</div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -1294,7 +1438,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 submitBtn.classList.add('loading');
                 
                 // Fetch classrooms for selected term
-                fetch(`/admin/meals/studentpayment/get-classrooms-by-term/?term=${encodeURIComponent(selectedTerm)}`)
+                fetch(`{% url 'meals:get_classrooms_by_term' %}?term=${encodeURIComponent(selectedTerm)}`)
                     .then(response => {
                         if (!response.ok) {
                             throw new Error('Network response was not ok');
@@ -1472,7 +1616,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Khởi tạo Month Picker đơn giản
-    const monthPicker = document.getElementById('month_picker');
+    const monthPicker = document.getElementById('{{ form.month.id_for_label }}');
     if (monthPicker) {
         // Tạo month picker popup
         const monthPickerPopup = document.createElement('div');

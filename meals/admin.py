@@ -338,8 +338,9 @@ class StudentPaymentImportForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
-        # Lấy danh sách niên khóa từ ClassRoom
-        terms = ClassRoom.objects.values_list('term', flat=True).distinct().order_by('-term')
+        # Lấy 2 term gần nhất từ ClassRoom, sắp xếp theo logic năm học
+        from .utils import get_sorted_terms
+        terms = get_sorted_terms()
         term_choices = [('', '--- Chọn Niên khóa ---')] + [(t, t) for t in terms]
         self.fields['term'].choices = term_choices
         

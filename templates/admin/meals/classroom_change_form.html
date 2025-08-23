@@ -38,6 +38,48 @@
     #student_set-group h2::after {
       content: " ({{ student_count }})";
     }
+    
+    /* Làm nổi bật button "Xóa học sinh đã chọn" */
+    input[name="delete_selected_students"],
+    input[name="delete_selected_students"]:focus,
+    input[name="delete_selected_students"]:active {
+      background: #dc3545 !important;
+      background-color: #dc3545 !important;
+      border: 2px solid #dc3545 !important;
+      border-color: #dc3545 !important;
+      color: #ffffff !important;
+      font-weight: bold !important;
+      padding: 12px 24px !important;
+      font-size: 16px !important;
+      border-radius: 6px !important;
+      box-shadow: 0 4px 8px rgba(220, 53, 69, 0.4) !important;
+      transition: all 0.3s ease !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.5px !important;
+      cursor: pointer !important;
+      position: relative !important;
+      z-index: 1000 !important;
+    }
+    
+    input[name="delete_selected_students"]:hover {
+      background: #c82333 !important;
+      background-color: #c82333 !important;
+      border-color: #bd2130 !important;
+      transform: translateY(-2px) !important;
+      box-shadow: 0 6px 12px rgba(220, 53, 69, 0.5) !important;
+    }
+    
+    input[name="delete_selected_students"]:active {
+      transform: translateY(0) !important;
+      box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3) !important;
+    }
+    
+    /* Override tất cả CSS variables có thể */
+    input[name="delete_selected_students"] {
+      --bg-secondary: #dc3545 !important;
+      --text-primary: #ffffff !important;
+      --border-color: #dc3545 !important;
+    }
   </style>
 {% endblock %}
 {# nút Xóa học sinh đã chọn lên trên #}

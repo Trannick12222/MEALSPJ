@@ -1,4 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
+from django.template.response import TemplateResponse
 from .models import MealRecord
 from .forms import MealRecordForm
 from django.contrib import messages
@@ -472,7 +473,35 @@ def bulk_meal_record_save(request):
         reason_data      = json.loads(reason_data_str)
         print("DEBUG: absence_data =", absence_data)  # Debug: in ra dữ liệu dropdown
 
+        # Kiểm tra quyền chỉnh sửa
+        from .utils import can_edit_specific_date
         students = Student.objects.filter(classroom__name=class_name)
+        
+        if students.exists():
+            # Lấy term của lớp đầu tiên (tất cả học sinh trong cùng lớp có cùng term)
+            first_student = students.first()
+            term = first_student.classroom.term
+            
+            # Kiểm tra quyền chỉnh sửa cho ngày này
+            can_edit = can_edit_specific_date(term, record_date)
+            
+            if not can_edit:
+                # Lấy thông tin chi tiết về quyền chỉnh sửa
+                from .utils import can_edit_term_data
+                edit_info = can_edit_term_data(term)
+                
+                if edit_info['allowed_months'] == ['all']:
+                    message = f"Không được phép chỉnh sửa dữ liệu ngày {record_date.strftime('%d/%m/%Y')} của term '{term}'."
+                else:
+                    allowed_months_str = ", ".join(edit_info['allowed_months'])
+                    message = f"Không được phép chỉnh sửa dữ liệu ngày {record_date.strftime('%d/%m/%Y')} của term '{term}'. Chỉ có thể chỉnh sửa dữ liệu tháng: {allowed_months_str}."
+                
+                return JsonResponse({
+                    "error": "permission_denied",
+                    "message": message
+                }, status=403)
+        
+        # Xóa dữ liệu cũ trước khi thêm mới
         MealRecord.objects.filter(student__in=students, date=record_date, meal_type=meal_type).delete()
 
         for student in students:
@@ -539,7 +568,8 @@ def bulk_meal_record_save(request):
 
 def bulk_meal_record_create(request):
     # 1) Lấy distinct list các term (Học kỳ/Niên khóa), mới nhất ở đầu
-    terms_list = ClassRoom.objects.values_list('term', flat=True).distinct().order_by('-term')
+    from .utils import get_sorted_terms
+    terms_list = get_sorted_terms()
     # 2) Nếu có ?term=… từ URL thì dùng, không thì default là phần tử đầu (latest)
     selected_term = request.GET.get('term') or (terms_list[0] if terms_list else '')
     # 2) Nếu user đã chọn term thì load lớp; còn không thì để rỗng
@@ -1522,3 +1552,127 @@ def export_monthly_statistics_all(request):
     resp['Content-Disposition'] = f'attachment; filename="TK_{classroom}_{month}.xlsx"'
     wb.save(resp)
     return resp
+
+@login_required
+@permission_required('meals.add_studentpayment', raise_exception=True)
+def import_payments_view(request):
+    """View để import payments từ file Excel"""
+    from django.contrib import messages
+    from django.shortcuts import redirect
+    from django.template.response import TemplateResponse
+    from .admin import StudentPaymentImportForm
+    from .models import ClassRoom, Student, StudentPayment
+    import openpyxl
+    from decimal import Decimal
+    
+    if request.method == 'POST':
+        form = StudentPaymentImportForm(request.POST, request.FILES)
+        if form.is_valid():
+            month = form.cleaned_data['month']
+            term = form.cleaned_data['term']
+            classroom_id = form.cleaned_data['classroom']
+            
+            # Lấy classroom object từ ID
+            try:
+                classroom = ClassRoom.objects.get(id=classroom_id)
+            except ClassRoom.DoesNotExist:
+                messages.error(request, "Lớp học không tồn tại.")
+                return redirect('meals:import_payments')
+            
+            wb = openpyxl.load_workbook(request.FILES['file'])
+            sheet = wb.active
+
+            overridden = []
+            imported_count = 0
+
+            for row in sheet.iter_rows(min_row=2, values_only=True):
+                student_name, raw_amount = row[:2]
+                if not student_name or raw_amount is None:
+                    continue
+
+                # parse số tiền (loại bỏ dấu phẩy nếu có)
+                amount = Decimal(str(raw_amount).replace(",", ""))
+
+                try:
+                    stu = Student.objects.get(classroom=classroom, name=student_name.strip())
+                except Student.DoesNotExist:
+                    # bỏ qua những tên không khớp
+                    continue
+
+                # kiểm tra overwrite
+                existed = StudentPayment.objects.filter(student=stu, month=month).exists()
+                if existed:
+                    overridden.append(student_name)
+
+                # 1) Xác định meal_price_id  tuition_fee trước
+                prior = (StudentPayment.objects
+                        .filter(student=stu)
+                        .exclude(month=month)
+                        .order_by('-month')
+                        .first())
+                if prior:
+                    price_id, fee = prior.meal_price_id, prior.tuition_fee
+                else:
+                    price_id, fee = 2, 0
+
+                # 2) Tạo mới hoặc update, gán luôn cả price  fee trong defaults
+                sp, created = StudentPayment.objects.get_or_create(
+                    student=stu,
+                    month=month,
+                    defaults={
+                        'amount_paid':     amount,
+                        'meal_price_id':   price_id,
+                        'tuition_fee':     fee,
+                    }
+                )
+                if not created:
+                    sp.amount_paid     = amount
+                    sp.meal_price_id   = price_id
+                    sp.tuition_fee     = fee
+
+                # 3) Lưu, StudentPayment.save() của bạn sẽ tính remaining_balance mà không mắc lỗi
+                sp.save()
+                imported_count += 1
+
+            # Recalc toàn bộ bảng (đảm bảo các tháng sau cũng update đúng)
+            all_pays = StudentPayment.objects.all().order_by('student__id','month')
+            for p in all_pays:
+                p.save()
+
+            if overridden:
+                messages.warning(
+                    request,
+                    f"Sẽ override dữ liệu của: {', '.join(overridden)}"
+                )
+            messages.success(
+                request,
+                f"Import thành công {imported_count} bản ghi."
+            )
+            return redirect('admin:meals_studentpayment_changelist')
+    else:
+        form = StudentPaymentImportForm()
+
+    context = {
+        'form': form,
+        'title': "Import tiền đã đóng học sinh"
+    }
+    return TemplateResponse(request, "admin/meals/import_payments.html", context)
+
+@login_required
+def get_classrooms_by_term_view(request):
+    """API endpoint để lấy danh sách lớp theo niên khóa"""
+    from django.http import JsonResponse
+    from .models import ClassRoom
+    
+    term = request.GET.get('term')
+    if not term:
+        return JsonResponse([], safe=False)
+
+    classrooms = ClassRoom.objects.filter(term=term).order_by('name')
+    data = []
+    for cls in classrooms:
+        data.append({
+            'id': cls.id,
+            'name': cls.name
+        })
+    return JsonResponse(data, safe=False)

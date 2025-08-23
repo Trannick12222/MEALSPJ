@@ -71,8 +71,9 @@ class StudentPaymentForm(forms.ModelForm):
 
         # 2) Year → Classroom → Student dynamic (thay thế hoàn toàn phần 2 cũ)
 
-        # --- 2.1) Lấy danh sách học kỳ (term) distinct từ ClassRoom ---
-        terms = ClassRoom.objects.values_list('term', flat=True).distinct().order_by('-term')
+        # --- 2.1) Lấy 2 term gần nhất từ ClassRoom, sắp xếp theo logic năm học ---
+        from .utils import get_sorted_terms
+        terms = get_sorted_terms()
         term_choices = [('', '--- Chọn Học kỳ ---')] + [(t, t) for t in terms]
         self.fields['term'].choices = term_choices
         if terms:

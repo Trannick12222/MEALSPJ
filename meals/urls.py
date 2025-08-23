@@ -37,4 +37,7 @@ urlpatterns = [
     path('ajax/load-meal-stats/',
          login_required(views.ajax_load_meal_stats),
          name='ajax_load_meal_stats'),
+    # Import payments
+    path('import-payments/', login_required(views.import_payments_view), name='import_payments'),
+    path('ajax/get-classrooms-by-term/', login_required(views.get_classrooms_by_term_view), name='get_classrooms_by_term'),
 ]

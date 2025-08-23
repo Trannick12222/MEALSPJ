@@ -581,6 +581,8 @@
                 </div>
             </div>
             
+
+            
             <!-- Student List -->
             <div id="student-list">
                 <div class="empty-state">
@@ -808,13 +810,25 @@
                         loadMealData();
                     }, 2000);
                 },
-                error: function() { 
+                error: function(xhr) { 
                     document.getElementById('btn-save').innerHTML = '<i class="fas fa-exclamation-triangle"></i> Lưu thất bại!';
                     document.getElementById('btn-save').disabled = false;
+                    
+                    // Kiểm tra nếu là lỗi permission denied
+                    if (xhr.status === 403) {
+                        try {
+                            const response = JSON.parse(xhr.responseText);
+                            alert('❌ Lỗi quyền truy cập: ' + response.message);
+                        } catch (e) {
+                            alert('❌ Không có quyền chỉnh sửa dữ liệu này!');
+                        }
+                    } else {
+                        alert('Lưu không thành công, vui lòng thử lại!');
+                    }
+                    
                     setTimeout(() => {
                         document.getElementById('btn-save').innerHTML = '💾 Lưu Dữ Liệu';
                     }, 2000);
-                    alert('Lưu không thành công, vui lòng thử lại!');
                 }
             });
         });

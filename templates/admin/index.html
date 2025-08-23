@@ -1476,7 +1476,7 @@
 
         const statsURL = "{% url 'meals:statistics' %}";
         const debtURL  = "{% url 'meals:student_payment_edit' %}";
-        const importURL = "/admin/meals/studentpayment/import-payments/";
+        const importURL = "{% url 'meals:import_payments' %}";
         const statsText= "{% trans 'Thống kê' %}";
         const debtText = "{% trans 'Chỉnh sửa công nợ' %}";
         const importText = "{% trans 'Import tiền đã đóng' %}";
