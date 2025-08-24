@@ -20,62 +20,192 @@
     crossorigin="anonymous" referrerpolicy="no-referrer"
   />
 
-  <!-- Google Font Noto Sans (hỗ trợ tiếng Việt) -->
+  <!-- Google Fonts -->
   <link
-    href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;700&display=swap&subset=vietnamese"
+    href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Montserrat:wght@400;600;700;800&display=swap"
     rel="stylesheet"
   >
 
   <!-- CSS tùy chỉnh -->
   <link rel="stylesheet" href="{% static 'css/style.css' %}">
 
-  <!-- Inline CSS cho navbar gradient và font -->
+  <!-- Soft Gradient Navbar CSS -->
   <style>
     :root {
-      --nav-gradient-start: #f9cdff;  /* pastel hồng */
-      --nav-gradient-end:   #BBDEFB;  /* pastel xanh */
+      --gradient-orange: #ff9a9e;
+      --gradient-teal: #a8edea;
+      --gradient-purple: #d299c2;
+      --gradient-blue: #fecfef;
+      --white: #ffffff;
+      --text-dark: #2d3748;
+      --shadow-soft: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     }
 
-    /* Navbar nền gradient và text nổi bật */
-    .navbar {
-      background: linear-gradient(135deg, var(--nav-gradient-start), var(--nav-gradient-end)) !important;
+    /* Semi-transparent Navbar with Soft Border */
+    .modern-navbar {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      padding: 0.75rem 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+      position: relative;
     }
-    .navbar .navbar-brand {
-      font-family: 'Noto Sans', sans-serif;
+
+    .modern-navbar .navbar-brand {
+      font-family: 'Poppins', 'Montserrat', 'Inter', sans-serif;
       font-weight: 700;
-      color: #222 !important;
+      font-size: 1.4rem;
+      background: linear-gradient(135deg, #1e40af 0%, #7c3aed 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      display: flex;
+      align-items: center;
+      position: relative;
+      z-index: 2;
+      letter-spacing: 0.4px;
+      transition: all 0.3s ease;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      text-transform: uppercase;
     }
-    /* Đảm bảo toggler-icon vẫn dễ nhìn */
-    .navbar-light .navbar-toggler-icon {
-      filter: brightness(0) invert(1);
+
+    .modern-navbar .navbar-brand:hover {
+      background: linear-gradient(135deg, #1d4ed8 0%, #8b5cf6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      transform: translateY(-1px);
+    }
+
+    .modern-navbar .navbar-nav {
+      align-items: center;
+      position: relative;
+      z-index: 2;
+    }
+
+    .modern-navbar .nav-link {
+      color: var(--text-dark) !important;
+      font-weight: 500;
+      padding: 0.5rem 1rem !important;
+      border-radius: 0.75rem;
+      margin: 0 0.25rem;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      font-size: 0.875rem;
+      background: rgba(255, 255, 255, 0.3);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .modern-navbar .nav-link:hover {
+      background: rgba(255, 255, 255, 0.5);
+      color: var(--text-dark) !important;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .modern-navbar .nav-link.text-danger {
+      background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+      color: var(--white) !important;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .modern-navbar .nav-link.text-danger:hover {
+      background: linear-gradient(135deg, #ff5252, #d32f2f);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+    }
+
+    .modern-navbar .navbar-toggler {
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      padding: 0.5rem 0.75rem;
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(10px);
+      border-radius: 0.75rem;
+    }
+
+    .modern-navbar .navbar-toggler:focus {
+      box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.3);
+    }
+
+    .modern-navbar .navbar-toggler-icon {
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(45, 55, 72, 0.8)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+    }
+
+    /* Admin button style */
+    .admin-fab {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 0.75rem;
+      padding: 0.5rem 1.25rem;
+      color: white;
+      font-weight: 500;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      font-size: 0.875rem;
+      box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+    }
+
+    .admin-fab:hover {
+      background: linear-gradient(135deg, #5a67d8, #6b46c1);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+      color: white;
+      text-decoration: none;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 991.98px) {
+      .modern-navbar .navbar-nav {
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        border-radius: 1rem;
+        padding: 1rem;
+        margin-top: 1rem;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        gap: 1rem;
+      }
+      
+      .modern-navbar .nav-link {
+        margin: 0;
+        text-align: center;
+        flex: 0 0 auto;
+      }
     }
   </style>
 </head>
 <body>
-  <!-- Navigation Bar -->
-  <nav class="navbar navbar-expand-lg navbar-light">
-    <a class="navbar-brand" href="{% url 'home' %}">QUẢN LÝ BỮA ĂN</a>
-    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
-      <span class="navbar-toggler-icon"></span>
-    </button>
+  <!-- Harmonious Navigation Bar -->
+  <nav class="navbar navbar-expand-lg modern-navbar">
+    <div class="container">
+      <a class="navbar-brand" href="{% url 'home' %}">
+        Trang Web Quản Lý Bữa Ăn
+      </a>
+      
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
 
-    <div class="collapse navbar-collapse" id="navbarNav">
-      <ul class="navbar-nav ml-auto">
-        {% if user.is_authenticated %}
-          <li class="nav-item">
-            <a class="nav-link text-danger" href="{% url 'logout' %}">
-              Thoát
-            </a>
-          </li>
-          {% if user.is_staff %}
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ml-auto">
+          {% if user.is_authenticated %}
+            {% if user.is_staff %}
+              <li class="nav-item">
+                <a class="nav-link admin-fab" href="{% url 'admin:index' %}">
+                  Quản trị
+                </a>
+              </li>
+            {% endif %}
             <li class="nav-item">
-              <a class="nav-link" href="{% url 'admin:index' %}">
-                Quay lại Admin
+              <a class="nav-link text-danger" href="{% url 'logout' %}">
+                Thoát
               </a>
             </li>
           {% endif %}
-        {% endif %}
-      </ul>
+        </ul>
+      </div>
     </div>
   </nav>
   
