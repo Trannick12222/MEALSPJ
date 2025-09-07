@@ -665,6 +665,126 @@
       align-items: center !important;
       justify-content: space-between !important;
       margin-bottom: 1.5rem !important;
+      flex-wrap: nowrap !important;
+      gap: 1rem !important;
+    }
+
+    .chart-filters {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      flex-shrink: 0;
+      min-width: 200px;
+    }
+
+    .term-filter-select {
+      background: linear-gradient(135deg, var(--white) 0%, rgba(255,255,255,0.95) 100%);
+      border: 2px solid var(--primary-color);
+      border-radius: 0.75rem;
+      padding: 0.375rem 0.75rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+      min-width: 160px;
+      width: auto;
+      white-space: nowrap;
+      overflow: visible;
+      backdrop-filter: blur(10px);
+    }
+
+    .term-filter-select:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.25);
+      border-color: rgba(102, 126, 234, 0.8);
+    }
+
+    .term-filter-select:focus {
+      outline: none;
+      transform: translateY(-2px);
+      border-color: var(--primary-color);
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3), 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    /* Fix dropdown options styling */
+    .term-filter-select option {
+      background: var(--white);
+      color: var(--text-primary);
+      padding: 0.375rem 0.75rem;
+      font-size: 0.9rem;
+      border: none;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: visible;
+    }
+
+    .term-filter-select option:hover,
+    .term-filter-select option:focus,
+    .term-filter-select option:selected {
+      background: var(--primary-color);
+      color: var(--white);
+    }
+
+    /* Dark mode support for dropdown */
+    [data-theme="dark"] .term-filter-select {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      border-color: var(--border-color);
+    }
+
+    [data-theme="dark"] .term-filter-select option {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      padding: 0.375rem 0.75rem;
+      white-space: nowrap;
+    }
+
+    [data-theme="dark"] .term-filter-select option:hover,
+    [data-theme="dark"] .term-filter-select option:focus,
+    [data-theme="dark"] .term-filter-select option:selected {
+      background: var(--primary-color);
+      color: var(--white);
+    }
+
+    /* Responsive dropdown for smaller screens */
+    @media (max-width: 768px) {
+      .section-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 1rem !important;
+      }
+      
+      .chart-filters {
+        width: 100%;
+        justify-content: flex-start;
+      }
+      
+      .term-filter-select {
+        min-width: 200px;
+        width: 100%;
+        max-width: 300px;
+      }
+    }
+
+    .loading-spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--border-color);
+      border-top: 2px solid var(--primary-color);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .filter-loading {
+      font-size: 0.9rem;
+      font-weight: 500;
     }
 
     .section-title {
@@ -759,13 +879,15 @@
     }
 
     .chart-title {
-      font-size: 1.125rem !important;
+      font-size: 1.25rem !important;
       font-weight: 700 !important;
       color: var(--text-primary) !important;
       margin: 0 !important;
       display: flex !important;
       align-items: center !important;
-      gap: 0.5rem !important;
+      gap: 0.75rem !important;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.1) !important;
+      letter-spacing: -0.025em !important;
     }
 
     .chart-title.meals-chart::before {
@@ -789,10 +911,15 @@
     }
 
     .chart-main-value {
-      font-size: 1.5rem !important;
+      font-size: 1.75rem !important;
       font-weight: 800 !important;
-      color: var(--text-primary) !important;
+      background: linear-gradient(135deg, var(--primary-color) 0%, #8B5CF6 100%) !important;
+      -webkit-background-clip: text !important;
+      -webkit-text-fill-color: transparent !important;
+      background-clip: text !important;
       margin: 0 !important;
+      letter-spacing: -0.02em !important;
+      text-shadow: 0 2px 4px rgba(102, 126, 234, 0.1) !important;
     }
 
     .chart-change {
@@ -1305,13 +1432,31 @@
   <!-- Keep original Django admin content -->
   {{ block.super }}
 
+  <!-- Charts Loading Indicator -->
+  <div class="charts-loading" id="chartsLoading" style="text-align: center; padding: 3rem; color: var(--text-secondary);">
+    <div class="loading-spinner" style="width: 32px; height: 32px; margin: 0 auto 1rem;"></div>
+    <p style="margin: 0; font-size: 1rem; font-weight: 500;">Đang tải biểu đồ phân tích...</p>
+  </div>
+
   <!-- Enhanced Charts Section -->
-  <div class="charts-section">
+  <div class="charts-section" id="chartsSection" style="opacity: 0; transition: opacity 0.5s ease;">
     <div class="section-header">
       <div>
         <h2 class="section-title">
           Phân tích dữ liệu
         </h2>
+      </div>
+      <div class="chart-filters" id="chartFilters" style="opacity: 0; visibility: hidden; transition: all 0.3s ease;">
+        <div class="filter-loading" id="filterLoading" style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-secondary);">
+          <div class="loading-spinner"></div>
+          <span>Đang tải bộ lọc...</span>
+        </div>
+        <select id="termFilter" class="term-filter-select" style="display: none;">
+          <option value="2024-2025">2024-2025</option>
+          <option value="2025-2026">2025-2026</option>
+          <option value="Hè 2025">Hè 2025</option>
+          <option value="Hè 2026">Hè 2026</option>
+        </select>
       </div>
     </div>
 
@@ -1738,6 +1883,128 @@
             }
           });
         }).observe(document.documentElement, { attributes: true });
+
+        // Function to update charts by term
+        window.updateChartsByTerm = function(term) {
+          console.log('updateChartsByTerm called with term:', term);
+          
+          // Check if charts exist
+          if (!chartRevenue || !chartMeals) {
+            console.error('Charts not initialized yet:', {chartRevenue, chartMeals});
+            return;
+          }
+          
+          fetch(`{% url 'meals:ajax_get_chart_data_by_term' %}?term=${encodeURIComponent(term || '')}`)
+            .then(response => {
+              console.log('Response status:', response.status);
+              return response.json();
+            })
+            .then(data => {
+              console.log('Chart data received:', data);
+              
+              // Update chart labels if provided
+              if (data.month_labels) {
+                chartRevenue.data.labels = data.month_labels;
+                chartMeals.data.labels = data.month_labels;
+              }
+              
+              // Update revenue chart
+              chartRevenue.data.datasets[0].data = data.revenue_data;
+              chartRevenue.update('active');
+              
+              // Update meals chart
+              chartMeals.data.datasets[0].data = data.meals_data;
+              chartMeals.update('active');
+              
+              // Update chart titles to show filtered term and time period
+              let termText = '';
+              if (term) {
+                if (term.includes('Hè')) {
+                  termText = ` (${term} - T6 đến T8)`;
+                } else if (term.includes('-')) {
+                  termText = ` (${term} - T9 đến T8)`;
+                } else {
+                  termText = ` (${term})`;
+                }
+              }
+              
+              const revenueTitle = document.querySelector('.revenue-chart');
+              const mealsTitle = document.querySelector('.meals-chart');
+              
+              if (revenueTitle) revenueTitle.textContent = `Doanh thu theo niên khóa${termText}`;
+              if (mealsTitle) mealsTitle.textContent = `Bữa ăn theo niên khóa${termText}`;
+              
+              // Update total values
+              const totalRevenue = data.revenue_data.reduce((a, b) => a + b, 0);
+              const totalMeals = data.meals_data.reduce((a, b) => a + b, 0);
+              
+              const revenueTotal = document.getElementById('chart-revenue-total');
+              const mealsTotal = document.getElementById('chart-meals-total');
+              
+              if (revenueTotal) animateNumber(revenueTotal, totalRevenue, true);
+              if (mealsTotal) animateNumber(mealsTotal, totalMeals);
+              
+              console.log(`✅ Charts updated successfully for term: ${data.term}`);
+              console.log(`📊 Month labels: ${data.month_labels?.join(', ')}`);
+            })
+            .catch(error => {
+              console.error('❌ Error updating charts:', error);
+            });
+        };
+
+        // Show charts section and filters after charts are initialized
+        setTimeout(() => {
+          const chartsLoading = document.getElementById('chartsLoading');
+          const chartsSection = document.getElementById('chartsSection');
+          const chartFilters = document.getElementById('chartFilters');
+          const filterLoading = document.getElementById('filterLoading');
+          const termFilter = document.getElementById('termFilter');
+          
+          // Hide loading indicator
+          if (chartsLoading) {
+            chartsLoading.style.display = 'none';
+          }
+          
+          // Fade in charts section
+          if (chartsSection) {
+            chartsSection.style.opacity = '1';
+          }
+          
+          // Then show filters after a short delay
+          setTimeout(() => {
+            if (chartFilters && filterLoading && termFilter) {
+              // Hide loading spinner
+              filterLoading.style.display = 'none';
+              
+              // Show dropdown
+              termFilter.style.display = 'block';
+              
+              // Fade in the filter container
+              chartFilters.style.opacity = '1';
+              chartFilters.style.visibility = 'visible';
+              
+              // Add event listener AFTER dropdown is visible
+              termFilter.addEventListener('change', function() {
+                const selectedTerm = this.value;
+                console.log('Term filter changed to:', selectedTerm);
+                if (typeof window.updateChartsByTerm === 'function') {
+                  window.updateChartsByTerm(selectedTerm);
+                } else {
+                  console.error('updateChartsByTerm function not found');
+                }
+              });
+              
+              // Load default term (first option)
+              const defaultTerm = termFilter.options[0].value;
+              if (defaultTerm && typeof window.updateChartsByTerm === 'function') {
+                window.updateChartsByTerm(defaultTerm);
+                console.log(`Loaded default term: ${defaultTerm}`);
+              }
+              
+              console.log('Term filter initialized and event listener added');
+            }
+          }, 300);
+        }, 1200); // Wait for charts to fully load
       }
     });
   </script>

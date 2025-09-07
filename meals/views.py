@@ -13,7 +13,7 @@ from .models import StudentPayment,MealPrice,AuditLog
 from .forms import StudentPaymentForm,ClassRoom
 from django.db import connection
 import json
-from django.db.models import Q
+from django.db.models import Q, Sum, Count
 import calendar
 import openpyxl
 from django.http import HttpResponse
@@ -1002,6 +1002,147 @@ def statistics_view(request):
         })
 
     return render(request, 'meals/statistics.html', context)
+def ajax_get_chart_data_by_term(request):
+    """
+    AJAX endpoint để lấy dữ liệu chart theo niên khóa (academic year)
+    """
+    term = request.GET.get('term', '')
+    
+    def get_academic_year_months(term):
+        """
+        Trả về danh sách các tháng trong niên khóa học theo format YYYY-MM
+        """
+        if not term:
+            return []
+            
+        if 'Hè' in term:
+            # Hè 2025 -> [2025-06, 2025-07, 2025-08]
+            year = int(term.split()[-1])
+            return [f"{year}-{month:02d}" for month in [6, 7, 8]]
+        else:
+            # 2024-2025 -> [2024-09, 2024-10, ..., 2024-12, 2025-01, ..., 2025-08]
+            start_year, end_year = map(int, term.split('-'))
+            months = []
+            # Tháng 9-12 của năm đầu
+            for month in range(9, 13):
+                months.append(f"{start_year}-{month:02d}")
+            # Tháng 1-8 của năm sau
+            for month in range(1, 9):
+                months.append(f"{end_year}-{month:02d}")
+            return months
+    
+    def get_month_labels(term):
+        """
+        Trả về labels cho trục X của chart
+        """
+        if not term:
+            return ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12']
+            
+        if 'Hè' in term:
+            return ['T6', 'T7', 'T8']
+        else:
+            return ['T9', 'T10', 'T11', 'T12', 'T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8']
+    
+    if not term:
+        # Nếu không có term, lấy data theo năm dương lịch (như cũ)
+        current_year = datetime.now().year
+        year_prefix = f"{current_year}-"
+        qs_paid = (
+            StudentPayment.objects
+            .filter(month__startswith=year_prefix)
+            .values('month')
+            .annotate(total_paid=Sum('amount_paid'))
+            .order_by('month')
+        )
+        qs_meals = (
+            MealRecord.objects
+            .filter(date__year=current_year)
+            .extra(select={'m': 'EXTRACT(month FROM date)'})
+            .values('m')
+            .annotate(c=Count('id'))
+            .order_by('m')
+        )
+        
+        # Process theo 12 tháng dương lịch
+        paid_month_data = [0] * 12
+        meal_counts = [0] * 12
+        
+        for row in qs_paid:
+            try:
+                mon = int(row['month'].split('-')[1])
+                paid_month_data[mon - 1] = float(row['total_paid'] or 0)
+            except (IndexError, ValueError):
+                continue
+        
+        for d in qs_meals:
+            meal_counts[d['m'] - 1] = d['c']
+            
+        return JsonResponse({
+            'revenue_data': paid_month_data,
+            'meals_data': meal_counts,
+            'term': 'Tất cả niên khóa',
+            'month_labels': ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12']
+        })
+    
+    else:
+        # Filter theo niên khóa cụ thể - LOGIC MỚI
+        students_in_term = Student.objects.filter(classroom__term=term)
+        
+        # Lấy TẤT CẢ payments của học sinh thuộc niên khóa (không filter theo tháng)
+        qs_paid = (
+            StudentPayment.objects
+            .filter(student__in=students_in_term)
+            .values('month')
+            .annotate(total_paid=Sum('amount_paid'))
+            .order_by('month')
+        )
+        
+        # Lấy TẤT CẢ meal records của học sinh thuộc niên khóa
+        meal_records = MealRecord.objects.filter(student__classroom__term=term)
+        
+        # Count meals by month manually (tất cả các tháng có data)
+        meal_counts_by_month = {}
+        for record in meal_records:
+            month_key = record.date.strftime('%Y-%m')
+            meal_counts_by_month[month_key] = meal_counts_by_month.get(month_key, 0) + 1
+        
+        # Tạo danh sách tháng thực tế có data (từ cả payments và meals)
+        payment_months = set(row['month'] for row in qs_paid if row['total_paid'])
+        meal_months = set(meal_counts_by_month.keys())
+        all_months = sorted(payment_months | meal_months)
+        
+        # Tạo labels cho các tháng thực tế
+        def get_month_label(month_str):
+            """Convert 2025-06 -> T6"""
+            try:
+                return f"T{int(month_str.split('-')[1])}"
+            except:
+                return month_str
+        
+        month_labels = [get_month_label(month) for month in all_months]
+        
+        # Initialize arrays với số tháng thực tế có data
+        num_months = len(all_months)
+        paid_month_data = [0] * num_months
+        meal_counts = [0] * num_months
+        
+        # Map payment data theo tháng thực tế
+        payment_dict = {row['month']: float(row['total_paid'] or 0) for row in qs_paid}
+        for i, month in enumerate(all_months):
+            paid_month_data[i] = payment_dict.get(month, 0)
+        
+        # Map meal data theo tháng thực tế
+        for i, month in enumerate(all_months):
+            meal_counts[i] = meal_counts_by_month.get(month, 0)
+        
+        return JsonResponse({
+            'revenue_data': paid_month_data,
+            'meals_data': meal_counts,
+            'term': term,
+            'month_labels': month_labels,
+            'actual_months': all_months  # Debug info
+        })
+
 def ajax_get_months(request):
     term     = request.GET.get('term')
     class_id = request.GET.get('class_id')

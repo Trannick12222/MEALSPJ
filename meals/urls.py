@@ -20,6 +20,7 @@ urlpatterns = [
     path('ajax/load-mealdata/', login_required(views.ajax_load_mealdata), name='ajax_load_mealdata'),
     path('ajax/load-months/', login_required(views.ajax_load_months), name='ajax_load_months'),
     path('ajax/get-months/', views.ajax_get_months, name='ajax_get_months'),
+    path('ajax/get-chart-data-by-term/', views.ajax_get_chart_data_by_term, name='ajax_get_chart_data_by_term'),
     # Student payments
     path('student-payment/edit/', login_required(views.student_payment_edit), name='student_payment_edit'),
     path('student-payment/edit/<int:pk>/', login_required(views.student_payment_edit), name='student_payment_edit'),

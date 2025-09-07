@@ -2911,6 +2911,28 @@
           studentPaymentRow.remove();
         }
 
+        // Add click handlers to classroom links to update charts
+        const classroomLinks = tbody.querySelectorAll('th a[href*="/classroom/"]');
+        classroomLinks.forEach(link => {
+          link.addEventListener('click', function(e) {
+            // Extract classroom info from the link
+            const href = this.getAttribute('href');
+            const linkText = this.textContent.trim();
+            
+            // Try to extract term from classroom name (assuming format "Name (Term)")
+            const termMatch = linkText.match(/\(([^)]+)\)$/);
+            const term = termMatch ? termMatch[1] : '';
+            
+            // Update charts if the function exists (only on dashboard)
+            if (typeof window.updateChartsByTerm === 'function' && term) {
+              // Small delay to ensure navigation completes
+              setTimeout(() => {
+                window.updateChartsByTerm(term);
+              }, 100);
+            }
+          });
+        });
+
         // Thêm icons vào các menu items có sẵn
         const links = tbody.querySelectorAll('th a');
         links.forEach(link => {
