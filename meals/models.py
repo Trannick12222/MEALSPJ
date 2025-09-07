@@ -157,7 +157,6 @@ class StudentPayment(models.Model):
 class ClassRoom(models.Model):
     name = models.CharField(
         max_length=50,
-        unique=True,
         help_text="Tên lớp học"
     )
     # đổi sang học kỳ/niên khóa tuỳ ý
@@ -169,12 +168,19 @@ class ClassRoom(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.term})"
+    
     class Meta:
         ordering = ['-id']
         verbose_name = _('Lớp học')
         verbose_name_plural = _('Lớp học')
         # Đảm bảo trong cùng 1 năm, không có 2 lớp trùng tên
-        unique_together = ('name', 'term')
+        constraints = [
+            models.UniqueConstraint(
+                fields=['name', 'term'],
+                name='unique_classroom_name_term',
+                violation_error_message="Lớp học với tên này đã tồn tại trong niên khóa này."
+            )
+        ]
 class Student(models.Model):
     name = models.CharField(max_length=100, help_text="Họ và tên học sinh")
     classroom = models.ForeignKey(ClassRoom, on_delete=models.CASCADE, help_text="Lớp học của học sinh")
