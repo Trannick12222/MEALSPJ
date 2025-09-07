@@ -168,12 +168,11 @@ class ClassRoom(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.term})"
-    
     class Meta:
         ordering = ['-id']
         verbose_name = _('Lớp học')
         verbose_name_plural = _('Lớp học')
-        # Đảm bảo trong cùng 1 năm, không có 2 lớp trùng tên
+        # Đảm bảo trong cùng 1 niên khóa, không có 2 lớp trùng tên
         constraints = [
             models.UniqueConstraint(
                 fields=['name', 'term'],
