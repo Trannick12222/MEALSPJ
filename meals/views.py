@@ -1111,15 +1111,18 @@ def ajax_get_chart_data_by_term(request):
         meal_months = set(meal_counts_by_month.keys())
         all_months = sorted(payment_months | meal_months)
         
-        # Tạo labels cho các tháng thực tế
-        def get_month_label(month_str):
-            """Convert 2025-06 -> T6"""
+        # Tạo labels cho các tháng thực tế với năm để tránh conflict
+        def get_month_label_with_year(month_str):
+            """Convert 2025-06 -> T6/25, 2026-02 -> T2/26"""
             try:
-                return f"T{int(month_str.split('-')[1])}"
+                year, month = month_str.split('-')
+                month_num = int(month)
+                year_short = year[-2:]  # 2025 -> 25
+                return f"T{month_num}/{year_short}"
             except:
                 return month_str
         
-        month_labels = [get_month_label(month) for month in all_months]
+        month_labels = [get_month_label_with_year(month) for month in all_months]
         
         # Initialize arrays với số tháng thực tế có data
         num_months = len(all_months)

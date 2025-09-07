@@ -1916,13 +1916,14 @@
               chartMeals.data.datasets[0].data = data.meals_data;
               chartMeals.update('active');
               
-              // Update chart titles to show filtered term and time period
+              // Update chart titles to show filtered term and actual time period
               let termText = '';
               if (term) {
-                if (term.includes('Hè')) {
-                  termText = ` (${term} - T6 đến T8)`;
-                } else if (term.includes('-')) {
-                  termText = ` (${term} - T9 đến T8)`;
+                const monthLabels = data.month_labels || [];
+                if (monthLabels.length > 0) {
+                  const firstMonth = monthLabels[0];
+                  const lastMonth = monthLabels[monthLabels.length - 1];
+                  termText = ` (${term} - ${firstMonth} đến ${lastMonth})`;
                 } else {
                   termText = ` (${term})`;
                 }
