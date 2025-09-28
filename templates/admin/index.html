@@ -1622,15 +1622,18 @@
         const statsURL = "{% url 'meals:statistics' %}";
         const debtURL  = "{% url 'meals:student_payment_edit' %}";
         const importURL = "{% url 'meals:import_payments' %}";
+        const bulkPriceURL = "{% url 'meals:bulk_meal_price_update' %}";
         const statsText= "{% trans 'Thống kê' %}";
         const debtText = "{% trans 'Chỉnh sửa công nợ' %}";
         const importText = "{% trans 'Import tiền đã đóng' %}";
+        const bulkPriceText = "{% trans 'Cập nhật giá ăn hàng loạt' %}";
 
         tbody.insertBefore(makeRow(debtURL, debtText, 'row2'), tbody.firstChild);
         tbody.insertBefore(makeRow(statsURL, statsText, 'row1'), tbody.firstChild);
         
-        // Thêm "Import tiền đã đóng" vào cuối danh sách
+        // Thêm "Import tiền đã đóng" và "Cập nhật giá ăn hàng loạt" vào cuối danh sách
         tbody.appendChild(makeRow(importURL, importText, '', 'row3'));
+        tbody.appendChild(makeRow(bulkPriceURL, bulkPriceText, '', 'row4'));
       }
 
       // Update captions

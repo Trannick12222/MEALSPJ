@@ -41,4 +41,9 @@ urlpatterns = [
     # Import payments
     path('import-payments/', login_required(views.import_payments_view), name='import_payments'),
     path('ajax/get-classrooms-by-term/', login_required(views.get_classrooms_by_term_view), name='get_classrooms_by_term'),
+    
+    # Bulk meal price update
+    path('bulk-meal-price-update/', views.bulk_meal_price_update_view, name='bulk_meal_price_update'),
+    path('ajax/load-students-bulk-update/', views.ajax_load_students_for_bulk_update, name='ajax_load_students_bulk_update'),
+    path('ajax/load-classrooms-by-term-bulk-update/', views.ajax_load_classrooms_by_term_bulk_update, name='ajax_load_classrooms_by_term_bulk_update'),
 ]

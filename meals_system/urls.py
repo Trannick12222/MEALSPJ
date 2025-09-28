@@ -23,6 +23,7 @@ urlpatterns = [
     # Admin logout fix (must be before admin/ to avoid conflicts)
     path('admin/logout/', admin_logout_view, name='admin_logout'),
     
+    
     # Admin site
     path('admin/', my_admin_site.urls),
 

@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cập nhật giá ăn hàng loạt</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #4f46e5;
+            --primary-hover: #4338ca;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --info-color: #06b6d4;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-400: #9ca3af;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+            --border-radius: 0.75rem;
+            --border-radius-sm: 0.5rem;
+            --border-radius-lg: 1rem;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .page-header {
+            background: white;
+            border-radius: var(--border-radius-lg);
+            padding: 3rem 2rem;
+            text-align: center;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-xl);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .page-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--info-color), var(--success-color));
+        }
+
+        .page-header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--gray-800);
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .page-header .subtitle {
+            color: var(--gray-600);
+            font-size: 1.125rem;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .page-header .icon {
+            width: 3.5rem;
+            height: 3.5rem;
+            background: linear-gradient(135deg, var(--primary-color), var(--info-color));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .nav-breadcrumb {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: var(--border-radius);
+            padding: 1rem 2rem;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: white;
+            font-size: 0.875rem;
+        }
+
+        .nav-breadcrumb a {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .nav-breadcrumb a:hover {
+            color: white;
+        }
+
+        .card {
+            background: white;
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-xl);
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, var(--gray-50) 0%, var(--gray-100) 100%);
+            padding: 2rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .card-header h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--gray-800);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .card-body {
+            padding: 2rem;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: var(--gray-700);
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .form-control {
+            padding: 1rem 1.25rem;
+            border: 2px solid var(--gray-200);
+            border-radius: var(--border-radius-sm);
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            background-color: white;
+            font-family: inherit;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .form-control:disabled {
+            background-color: var(--gray-100);
+            color: var(--gray-500);
+            cursor: not-allowed;
+            border-color: var(--gray-300);
+        }
+
+        .students-container {
+            display: none;
+        }
+
+        .students-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--info-color) 100%);
+            color: white;
+            padding: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .students-header h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .student-count {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.5rem 1rem;
+            border-radius: var(--border-radius-sm);
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .select-all-container {
+            padding: 1.5rem 2rem;
+            background: linear-gradient(135deg, var(--gray-50) 0%, rgba(79, 70, 229, 0.05) 100%);
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .select-all-label {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            cursor: pointer;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .checkbox {
+            width: 1.25rem;
+            height: 1.25rem;
+            border: 2px solid var(--gray-300);
+            border-radius: 0.375rem;
+            cursor: pointer;
+            accent-color: var(--primary-color);
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .checkbox:hover {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .checkbox:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+        }
+
+        .students-list {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .student-item {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--gray-100);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .student-item:hover {
+            background-color: var(--gray-50);
+        }
+
+        .student-item:last-child {
+            border-bottom: none;
+        }
+
+        .student-name {
+            font-weight: 500;
+            color: var(--gray-800);
+            flex: 1;
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 0.25rem 0;
+            border-radius: 0.25rem;
+            transition: all 0.2s ease;
+        }
+
+        .student-name:hover {
+            color: var(--primary-color);
+            background-color: rgba(79, 70, 229, 0.05);
+            padding: 0.25rem 0.5rem;
+        }
+
+        .student-status {
+            font-size: 0.75rem;
+            padding: 0.375rem 0.75rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+        }
+
+        .status-new {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-existing {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--gray-500);
+        }
+
+        .loading i {
+            font-size: 2.5rem;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--gray-500);
+        }
+
+        .no-data i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--gray-400);
+        }
+
+        .submit-container {
+            padding: 2rem;
+            background: var(--gray-50);
+            text-align: center;
+            border-top: 1px solid var(--gray-200);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: var(--border-radius-sm);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--info-color) 100%);
+            color: white;
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-primary:disabled {
+            background: var(--gray-400);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--gray-700);
+            border: 2px solid var(--gray-300);
+        }
+
+        .btn-secondary:hover {
+            background: var(--gray-50);
+            border-color: var(--gray-400);
+        }
+
+        .alert {
+            padding: 1.5rem;
+            border-radius: var(--border-radius-sm);
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+
+        .alert-success {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+        }
+
+        .alert-error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+        }
+
+        .alert-info {
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            color: #0c4a6e;
+        }
+
+        .results-container {
+            margin-bottom: 2rem;
+        }
+
+        .results-header {
+            padding: 2rem;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .results-success .results-header {
+            background: linear-gradient(135deg, var(--success-color) 0%, #059669 100%);
+        }
+
+        .results-error .results-header {
+            background: linear-gradient(135deg, var(--danger-color) 0%, #dc2626 100%);
+        }
+
+        .results-body {
+            padding: 2rem;
+        }
+
+        .results-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--gray-50);
+            padding: 1.5rem;
+            border-radius: var(--border-radius-sm);
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--gray-800);
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--gray-600);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+
+        .error-list {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: var(--border-radius-sm);
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .error-list h4 {
+            margin: 0 0 1rem 0;
+            color: var(--danger-color);
+            font-size: 1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .error-list ul {
+            margin: 0;
+            padding-left: 1.5rem;
+        }
+
+        .error-list li {
+            margin-bottom: 0.5rem;
+            color: #991b1b;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem 0.5rem;
+            }
+
+            .page-header {
+                padding: 2rem 1rem;
+            }
+
+            .page-header h1 {
+                font-size: 1.875rem;
+                flex-direction: column;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+            .card-body {
+                padding: 1.5rem;
+            }
+
+            .students-header {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start;
+            }
+
+            .student-item {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Navigation -->
+        <div class="nav-breadcrumb">
+            <a href="/admin/"><i class="fas fa-home"></i> Trang chủ</a>
+            <i class="fas fa-chevron-right"></i>
+            <span>Cập nhật giá ăn hàng loạt</span>
+        </div>
+
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1>
+                <div class="icon">
+                    <i class="fas fa-money-bill-wave"></i>
+                </div>
+                Cập nhật giá ăn hàng loạt
+            </h1>
+            <div class="subtitle">
+                Cập nhật giá ăn cho nhiều học sinh cùng lúc một cách nhanh chóng và hiệu quả. 
+                Chọn cấu hình giá, tháng áp dụng, niên khóa và lớp học để bắt đầu.
+            </div>
+        </div>
+
+        <!-- Messages -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-triangle{% else %}info-circle{% endif %}"></i>
+                    <div>{{ message }}</div>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- Results -->
+        {% if results %}
+            <div class="card results-container {% if results.errors %}results-error{% else %}results-success{% endif %}">
+                <div class="results-header">
+                    <i class="fas fa-{% if results.errors %}exclamation-triangle{% else %}check-circle{% endif %}"></i>
+                    <h3>Kết quả cập nhật</h3>
+                </div>
+                <div class="results-body">
+                    <div class="results-stats">
+                        <div class="stat-card">
+                            <div class="stat-value">{{ results.success_count }}</div>
+                            <div class="stat-label">Thành công</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">{{ results.errors|length }}</div>
+                            <div class="stat-label">Lỗi</div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 1rem;">
+                        <p><strong>Cấu hình giá:</strong> {{ results.meal_price_name }}</p>
+                        <p><strong>Tháng:</strong> {{ results.month }}</p>
+                        <p><strong>Lớp:</strong> {{ results.classroom_name }}</p>
+                    </div>
+
+                    {% if results.errors %}
+                        <div class="error-list">
+                            <h4><i class="fas fa-exclamation-triangle"></i> Chi tiết lỗi</h4>
+                            <ul>
+                                {% for error in results.errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Main Form -->
+        <form method="post" id="bulk-update-form">
+            {% csrf_token %}
+            
+            <!-- Configuration Section -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>
+                        <i class="fas fa-cog"></i>
+                        Cấu hình cập nhật
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="id_meal_price" class="form-label">
+                                <i class="fas fa-tags"></i>
+                                Cấu hình giá ăn
+                            </label>
+                            <select name="meal_price" id="id_meal_price" class="form-control" required>
+                                <option value="">Chọn cấu hình giá ăn</option>
+                                {% for price in meal_prices %}
+                                    <option value="{{ price.id }}">
+                                        {{ price.effective_date|date:"d/m/Y" }} - {{ price.daily_price|floatformat:0 }}₫/ngày 
+                                        (Sáng: {{ price.breakfast_price|floatformat:0 }}₫, Trưa: {{ price.lunch_price|floatformat:0 }}₫)
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="id_month" class="form-label">
+                                <i class="fas fa-calendar-alt"></i>
+                                Tháng áp dụng
+                            </label>
+                            <input type="month" name="month" id="id_month" class="form-control" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="id_term" class="form-label">
+                                <i class="fas fa-graduation-cap"></i>
+                                Niên khóa
+                            </label>
+                            <select name="term" id="id_term" class="form-control" required>
+                                <option value="">Chọn niên khóa</option>
+                                {% for term in terms_list %}
+                                    <option value="{{ term }}">{{ term }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="id_classroom" class="form-label">
+                                <i class="fas fa-school"></i>
+                                Lớp học
+                            </label>
+                            <select name="classroom" id="id_classroom" class="form-control" required disabled>
+                                <option value="">Vui lòng chọn niên khóa trước</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Students Selection -->
+            <div class="card students-container" id="students-container">
+                <div class="students-header">
+                    <h2>
+                        <i class="fas fa-users"></i>
+                        Danh sách học sinh
+                    </h2>
+                    <div class="student-count" id="student-count">
+                        0 học sinh
+                    </div>
+                </div>
+
+                <div class="select-all-container">
+                    <label for="select-all" class="select-all-label">
+                        <input type="checkbox" id="select-all" class="checkbox">
+                        <i class="fas fa-check-double"></i>
+                        Chọn tất cả
+                    </label>
+                </div>
+
+                <div class="loading" id="loading">
+                    <i class="fas fa-spinner"></i>
+                    <div>Đang tải danh sách học sinh...</div>
+                </div>
+
+                <div class="students-list" id="students-list">
+                    <!-- Students will be loaded here via AJAX -->
+                </div>
+
+                <div class="submit-container">
+                    <a href="/admin/" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i>
+                        Quay lại
+                    </a>
+                    <button type="submit" class="btn btn-primary" id="submit-btn" disabled>
+                        <i class="fas fa-save"></i>
+                        Áp dụng cập nhật
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const termSelect = document.getElementById('id_term');
+            const classroomSelect = document.getElementById('id_classroom');
+            const monthInput = document.getElementById('id_month');
+            const studentsContainer = document.getElementById('students-container');
+            const studentsList = document.getElementById('students-list');
+            const loading = document.getElementById('loading');
+            const selectAllCheckbox = document.getElementById('select-all');
+            const submitBtn = document.getElementById('submit-btn');
+            const studentCount = document.getElementById('student-count');
+
+            function loadClassrooms() {
+                const term = termSelect.value;
+                
+                if (!term) {
+                    classroomSelect.innerHTML = '<option value="">Vui lòng chọn niên khóa trước</option>';
+                    classroomSelect.disabled = true;
+                    studentsContainer.style.display = 'none';
+                    return;
+                }
+                
+                classroomSelect.disabled = true;
+                classroomSelect.innerHTML = '<option value="">Đang tải...</option>';
+                
+                fetch(`/meals/ajax/load-classrooms-by-term-bulk-update/?term=${encodeURIComponent(term)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        classroomSelect.innerHTML = '<option value="">Chọn lớp học</option>';
+                        
+                        if (data.error) {
+                            classroomSelect.innerHTML = `<option value="">❌ Lỗi: ${data.error}</option>`;
+                            return;
+                        }
+                        
+                        if (data.classrooms.length === 0) {
+                            classroomSelect.innerHTML = '<option value="">📚 Không có lớp nào trong niên khóa này</option>';
+                            return;
+                        }
+                        
+                        data.classrooms.forEach(classroom => {
+                            classroomSelect.innerHTML += `<option value="${classroom.id}">${classroom.name}</option>`;
+                        });
+                        
+                        classroomSelect.disabled = false;
+                    })
+                    .catch(error => {
+                        classroomSelect.innerHTML = `<option value="">🌐 Lỗi kết nối: ${error.message}</option>`;
+                    });
+            }
+
+            function loadStudents() {
+                const classroomId = classroomSelect.value;
+                const month = monthInput.value;
+                
+                if (!classroomId) {
+                    studentsContainer.style.display = 'none';
+                    return;
+                }
+                
+                studentsContainer.style.display = 'block';
+                loading.style.display = 'block';
+                studentsList.innerHTML = '';
+                submitBtn.disabled = true;
+                studentCount.textContent = '0 học sinh';
+                
+                fetch(`/meals/ajax/load-students-bulk-update/?classroom_id=${classroomId}&month=${month}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        loading.style.display = 'none';
+                        
+                        if (data.error) {
+                            studentsList.innerHTML = `
+                                <div class="no-data">
+                                    <i class="fas fa-exclamation-triangle" style="color: var(--danger-color);"></i>
+                                    <div>Lỗi: ${data.error}</div>
+                                </div>
+                            `;
+                            return;
+                        }
+                        
+                        if (data.students.length === 0) {
+                            studentsList.innerHTML = `
+                                <div class="no-data">
+                                    <i class="fas fa-user-slash"></i>
+                                    <div>Không có học sinh nào trong lớp này</div>
+                                </div>
+                            `;
+                            return;
+                        }
+                        
+                        studentCount.textContent = `${data.students.length} học sinh`;
+                        
+                        let html = '';
+                        data.students.forEach(student => {
+                            const statusClass = student.has_payment ? 'status-existing' : 'status-new';
+                            const statusText = student.has_payment ? 'Đã có dữ liệu' : 'Mới tạo';
+                            const statusIcon = student.has_payment ? 'fas fa-check' : 'fas fa-plus';
+                            
+                            html += `
+                                <div class="student-item">
+                                    <input type="checkbox" name="students" value="${student.id}" id="student_${student.id}" class="checkbox">
+                                    <div class="student-name" onclick="toggleStudent('student_${student.id}')">${student.name}</div>
+                                    <div class="student-status ${statusClass}">
+                                        <i class="${statusIcon}"></i>
+                                        ${statusText}
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        
+                        studentsList.innerHTML = html;
+                        
+                        // Add event listeners to student checkboxes
+                        const studentCheckboxes = studentsList.querySelectorAll('input[type="checkbox"]');
+                        studentCheckboxes.forEach(checkbox => {
+                            checkbox.addEventListener('change', updateSubmitButton);
+                            checkbox.addEventListener('click', function(e) {
+                                // Đảm bảo event không bị block
+                                e.stopPropagation();
+                            });
+                        });
+                        
+                        updateSubmitButton();
+                    })
+                    .catch(error => {
+                        loading.style.display = 'none';
+                        studentsList.innerHTML = `
+                            <div class="no-data">
+                                <i class="fas fa-wifi" style="color: var(--danger-color);"></i>
+                                <div>Lỗi kết nối: ${error.message}</div>
+                            </div>
+                        `;
+                    });
+            }
+
+            function updateSubmitButton() {
+                const checkedStudents = studentsList.querySelectorAll('input[type="checkbox"]:checked');
+                submitBtn.disabled = checkedStudents.length === 0;
+                
+                // Update select all checkbox
+                const allStudents = studentsList.querySelectorAll('input[type="checkbox"]');
+                selectAllCheckbox.checked = allStudents.length > 0 && checkedStudents.length === allStudents.length;
+                selectAllCheckbox.indeterminate = checkedStudents.length > 0 && checkedStudents.length < allStudents.length;
+            }
+
+            // Toggle student selection
+            window.toggleStudent = function(studentId) {
+                const checkbox = document.getElementById(studentId);
+                if (checkbox && !checkbox.disabled) {
+                    checkbox.checked = !checkbox.checked;
+                    // Trigger change event để đảm bảo tất cả listeners được gọi
+                    checkbox.dispatchEvent(new Event('change'));
+                }
+            }
+
+            // Event listeners
+            termSelect.addEventListener('change', function() {
+                loadClassrooms();
+                studentsContainer.style.display = 'none';
+            });
+            
+            classroomSelect.addEventListener('change', loadStudents);
+            monthInput.addEventListener('change', loadStudents);
+
+            selectAllCheckbox.addEventListener('change', function() {
+                const studentCheckboxes = studentsList.querySelectorAll('input[type="checkbox"]');
+                studentCheckboxes.forEach(checkbox => {
+                    checkbox.checked = selectAllCheckbox.checked;
+                });
+                updateSubmitButton();
+            });
+
+            // Form submission confirmation
+            document.getElementById('bulk-update-form').addEventListener('submit', function(e) {
+                const checkedStudents = studentsList.querySelectorAll('input[type="checkbox"]:checked');
+                const mealPrice = document.getElementById('id_meal_price').selectedOptions[0].text;
+                const month = monthInput.value;
+                const term = termSelect.selectedOptions[0].text;
+                const classroom = classroomSelect.selectedOptions[0].text;
+                
+                const confirmMessage = `Bạn có chắc chắn muốn cập nhật giá ăn cho ${checkedStudents.length} học sinh?\n\n` +
+                                      `Cấu hình giá: ${mealPrice}\n` +
+                                      `Tháng: ${month}\n` +
+                                      `Niên khóa: ${term}\n` +
+                                      `Lớp: ${classroom}`;
+                
+                if (!confirm(confirmMessage)) {
+                    e.preventDefault();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

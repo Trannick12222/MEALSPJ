@@ -26,7 +26,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
 from django.contrib.auth import authenticate, login as auth_login
 from django.urls import reverse
-from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.auth.decorators import login_required, permission_required, user_passes_test
 from django.core.exceptions import PermissionDenied
 from .utils import get_current_price
 from django.db import transaction
@@ -1748,18 +1748,35 @@ def import_payments_view(request):
                 if existed:
                     overridden.append(student_name)
 
-                # 1) Xác định meal_price_id  tuition_fee trước
+                # 1) Xác định meal_price_id và tuition_fee cho record mới
                 prior = (StudentPayment.objects
                         .filter(student=stu)
                         .exclude(month=month)
                         .order_by('-month')
                         .first())
                 if prior:
+                    # Sử dụng cấu hình từ tháng trước
                     price_id, fee = prior.meal_price_id, prior.tuition_fee
                 else:
-                    price_id, fee = 2, 0
+                    # Cho record mới: tìm MealPrice phù hợp với tháng import
+                    try:
+                        from datetime import datetime
+                        # Sử dụng cuối tháng để capture tất cả MealPrice trong tháng
+                        year, month_num = map(int, month.split('-'))
+                        if month_num == 12:
+                            target_date = datetime(year + 1, 1, 1).date()
+                        else:
+                            target_date = datetime(year, month_num + 1, 1).date()
+                        
+                        suitable_price = MealPrice.objects.filter(
+                            effective_date__lt=target_date
+                        ).order_by('-effective_date').first()
+                        price_id = suitable_price.id if suitable_price else 2
+                    except:
+                        price_id = 2
+                    fee = Decimal('0')
 
-                # 2) Tạo mới hoặc update, gán luôn cả price  fee trong defaults
+                # 2) Tạo mới hoặc update
                 sp, created = StudentPayment.objects.get_or_create(
                     student=stu,
                     month=month,
@@ -1769,12 +1786,16 @@ def import_payments_view(request):
                         'tuition_fee':     fee,
                     }
                 )
+                
                 if not created:
-                    sp.amount_paid     = amount
-                    sp.meal_price_id   = price_id
-                    sp.tuition_fee     = fee
+                    # Nếu record đã tồn tại, chỉ cập nhật số tiền đã đóng
+                    # Giữ nguyên meal_price_id và tuition_fee hiện tại
+                    sp.amount_paid = amount
+                else:
+                    # Record mới được tạo với meal_price_id và tuition_fee từ defaults
+                    pass
 
-                # 3) Lưu, StudentPayment.save() của bạn sẽ tính remaining_balance mà không mắc lỗi
+                # 3) Lưu để tính lại remaining_balance
                 sp.save()
                 imported_count += 1
 
@@ -1820,3 +1841,184 @@ def get_classrooms_by_term_view(request):
             'name': cls.name
         })
     return JsonResponse(data, safe=False)
+
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser, login_url='/admin/login/')
+def bulk_meal_price_update_view(request):
+    """
+    Bulk update meal price for students
+    """
+    if request.method == 'POST':
+        meal_price_id = request.POST.get('meal_price')
+        month = request.POST.get('month')
+        classroom_id = request.POST.get('classroom')
+        selected_students = request.POST.getlist('students')
+        
+        if not all([meal_price_id, month, classroom_id, selected_students]):
+            messages.error(request, 'Vui lòng điền đầy đủ thông tin.')
+            return redirect('meals:bulk_meal_price_update')
+        
+        try:
+            meal_price = MealPrice.objects.get(id=meal_price_id)
+            classroom = ClassRoom.objects.get(id=classroom_id)
+            
+            success_count = 0
+            error_list = []
+            
+            with transaction.atomic():
+                for student_id in selected_students:
+                    try:
+                        student = Student.objects.get(id=student_id, classroom=classroom)
+                        
+                        # Check if StudentPayment exists for this month
+                        student_payment, created = StudentPayment.objects.get_or_create(
+                            student=student,
+                            month=month,
+                            defaults={
+                                'meal_price': meal_price,
+                                'amount_paid': Decimal('0'),
+                                'tuition_fee': Decimal('0')
+                            }
+                        )
+                        
+                        if created:
+                            # Get tuition_fee from previous month
+                            previous_payment = StudentPayment.objects.filter(
+                                student=student,
+                                month__lt=month
+                            ).order_by('-month').first()
+                            
+                            if previous_payment:
+                                student_payment.tuition_fee = previous_payment.tuition_fee
+                        
+                        # Update meal_price
+                        student_payment.meal_price = meal_price
+                        student_payment.save()
+                        
+                        success_count += 1
+                        
+                    except Student.DoesNotExist:
+                        error_list.append(f'Không tìm thấy học sinh ID: {student_id}')
+                    except Exception as e:
+                        error_list.append(f'Lỗi với học sinh ID {student_id}: {str(e)}')
+            
+            # Prepare success message
+            success_msg = f'Đã cập nhật thành công {success_count} học sinh'
+            if error_list:
+                success_msg += f'. Có {len(error_list)} lỗi.'
+            
+            messages.success(request, success_msg)
+            
+            # Store results in session for display
+            request.session['bulk_update_results'] = {
+                'success_count': success_count,
+                'errors': error_list,
+                'meal_price_name': str(meal_price),
+                'month': month,
+                'classroom_name': classroom.name
+            }
+            
+        except MealPrice.DoesNotExist:
+            messages.error(request, 'Cấu hình giá ăn không tồn tại.')
+        except ClassRoom.DoesNotExist:
+            messages.error(request, 'Lớp học không tồn tại.')
+        except Exception as e:
+            messages.error(request, f'Có lỗi xảy ra: {str(e)}')
+        
+        return redirect('meals:bulk_meal_price_update')
+    
+    # GET request - show form
+    meal_prices = MealPrice.objects.all().order_by('-effective_date')
+    
+    # Get terms for filtering
+    from .utils import get_sorted_terms
+    terms_list = get_sorted_terms()
+    
+    # Initially show no classrooms until term is selected
+    classrooms = ClassRoom.objects.none()
+    
+    # Get results from session if available
+    results = request.session.pop('bulk_update_results', None)
+    
+    context = {
+        'meal_prices': meal_prices,
+        'classrooms': classrooms,
+        'terms_list': terms_list,
+        'results': results,
+        'title': 'Cập nhật giá ăn hàng loạt'
+    }
+    
+    return render(request, 'meals/bulk_meal_price_update.html', context)
+
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser, login_url='/admin/login/')
+def ajax_load_students_for_bulk_update(request):
+    """
+    AJAX endpoint to load students by classroom for bulk update
+    """
+    classroom_id = request.GET.get('classroom_id')
+    month = request.GET.get('month')
+    
+    if not classroom_id:
+        return JsonResponse({'students': []})
+    
+    try:
+        classroom = ClassRoom.objects.get(id=classroom_id)
+        students = Student.objects.filter(classroom=classroom).order_by('name')
+        
+        students_data = []
+        for student in students:
+            # Check if student has payment record for this month
+            has_payment = False
+            current_meal_price = None
+            
+            if month:
+                try:
+                    payment = StudentPayment.objects.get(student=student, month=month)
+                    has_payment = True
+                    current_meal_price = str(payment.meal_price)
+                except StudentPayment.DoesNotExist:
+                    pass
+            
+            students_data.append({
+                'id': student.id,
+                'name': student.name,
+                'has_payment': has_payment,
+                'current_meal_price': current_meal_price
+            })
+        
+        return JsonResponse({'students': students_data})
+        
+    except ClassRoom.DoesNotExist:
+        return JsonResponse({'students': []})
+    except Exception as e:
+        return JsonResponse({'error': str(e)})
+
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser, login_url='/admin/login/')
+def ajax_load_classrooms_by_term_bulk_update(request):
+    """
+    AJAX endpoint to load classrooms by term for bulk update
+    """
+    term = request.GET.get('term')
+    
+    if not term:
+        return JsonResponse({'classrooms': []})
+    
+    try:
+        classrooms = ClassRoom.objects.filter(term=term).order_by('name')
+        
+        classrooms_data = []
+        for classroom in classrooms:
+            classrooms_data.append({
+                'id': classroom.id,
+                'name': classroom.name
+            })
+        
+        return JsonResponse({'classrooms': classrooms_data})
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)})
