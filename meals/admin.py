@@ -354,6 +354,52 @@ class StudentPaymentImportForm(forms.Form):
                 classrooms = ClassRoom.objects.filter(term=selected_term).order_by('name')
                 classroom_choices = [('', '--- Chọn Lớp ---')] + [(c.id, c.name) for c in classrooms]
                 self.fields['classroom'].choices = classroom_choices
+
+class TuitionFeeImportForm(forms.Form):
+    term = forms.ChoiceField(
+        label="Niên khóa/Học kỳ",
+        choices=[],
+        required=True,
+        help_text="Chọn niên khóa để lọc danh sách lớp"
+    )
+    month = forms.CharField(
+        label="Tháng",
+        widget=forms.TextInput(attrs={'type': 'month'}),
+        required=True,
+        help_text="Chọn tháng cần import dữ liệu học phí"
+    )
+    classroom = forms.ChoiceField(
+        label="Lớp",
+        choices=[],
+        required=True,
+        help_text="Chọn lớp cần import dữ liệu học phí"
+    )
+    file = forms.FileField(
+        label="File Excel", 
+        required=True,
+        help_text="Chọn file Excel chứa dữ liệu học phí (Cột 1: Tên học sinh, Cột 2: Học phí)"
+    )
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Lấy 2 term gần nhất từ ClassRoom, sắp xếp theo logic năm học
+        from .utils import get_sorted_terms
+        terms = get_sorted_terms()
+        term_choices = [('', '--- Chọn Niên khóa ---')] + [(t, t) for t in terms]
+        self.fields['term'].choices = term_choices
+        
+        # Khởi tạo classroom choices rỗng
+        self.fields['classroom'].choices = [('', '--- Chọn Lớp ---')]
+        
+        # Nếu có dữ liệu POST, cập nhật classroom choices
+        if 'term' in self.data:
+            selected_term = self.data.get('term')
+            if selected_term:
+                classrooms = ClassRoom.objects.filter(term=selected_term).order_by('name')
+                classroom_choices = [('', '--- Chọn Lớp ---')] + [(c.id, c.name) for c in classrooms]
+                self.fields['classroom'].choices = classroom_choices
+
 class YearFilter(SimpleListFilter):
     title            = 'Năm'
     parameter_name   = 'year'

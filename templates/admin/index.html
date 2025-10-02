@@ -96,27 +96,31 @@
       display: none !important;
     }
     
-    /* Backup selectors cho dashboard - exclude import-payments */
-    body.dashboard #content-main .app-meals.module table tbody tr:has(th a[href*="studentpayment"]):not(:has(th a[href*="import-payments"])),
-    body.dashboard #content-main .app-meals.module table tbody tr th a[href*="studentpayment"]:not([href*="import-payments"]),
+    /* Backup selectors cho dashboard - exclude import-payments and import-tuition-fee */
+    body.dashboard #content-main .app-meals.module table tbody tr:has(th a[href*="studentpayment"]):not(:has(th a[href*="import-payments"])):not(:has(th a[href*="import-tuition-fee"])),
+    body.dashboard #content-main .app-meals.module table tbody tr th a[href*="studentpayment"]:not([href*="import-payments"]):not([href*="import-tuition-fee"]),
     body.dashboard #content-main .app-meals.module table tbody tr:has(th a:contains("Công nợ học sinh")),
     body.dashboard #content-main .app-meals.module table tbody tr:has(th:contains("Công nợ học sinh")) {
       display: none !important;
     }
     
-    /* Backup selectors cho sidebar - exclude import-payments */
-    body:not(.dashboard) #nav-sidebar .module table tbody tr:has(th a[href*="studentpayment"]):not(:has(th a[href*="import-payments"])),
-    body:not(.dashboard) #nav-sidebar .module table tbody tr th a[href*="studentpayment"]:not([href*="import-payments"]),
+    /* Backup selectors cho sidebar - exclude import-payments and import-tuition-fee */
+    body:not(.dashboard) #nav-sidebar .module table tbody tr:has(th a[href*="studentpayment"]):not(:has(th a[href*="import-payments"])):not(:has(th a[href*="import-tuition-fee"])),
+    body:not(.dashboard) #nav-sidebar .module table tbody tr th a[href*="studentpayment"]:not([href*="import-payments"]):not([href*="import-tuition-fee"]),
     body:not(.dashboard) #nav-sidebar .module table tbody tr:has(th a:contains("Công nợ học sinh")),
     body:not(.dashboard) #nav-sidebar .module table tbody tr:has(th:contains("Công nợ học sinh")) {
       display: none !important;
     }
 
-    /* Ensure import payments row is visible */
+    /* Ensure import payments and tuition fee rows are visible */
     body.dashboard #content-main .app-meals.module table tbody tr.row3,
+    body.dashboard #content-main .app-meals.module table tbody tr.row4,
     body.dashboard #content-main .app-meals.module table tbody tr:has(th a[href*="import-payments"]),
+    body.dashboard #content-main .app-meals.module table tbody tr:has(th a[href*="import-tuition-fee"]),
     body:not(.dashboard) #nav-sidebar .module table tbody tr.row3,
-    body:not(.dashboard) #nav-sidebar .module table tbody tr:has(th a[href*="import-payments"]) {
+    body:not(.dashboard) #nav-sidebar .module table tbody tr.row4,
+    body:not(.dashboard) #nav-sidebar .module table tbody tr:has(th a[href*="import-payments"]),
+    body:not(.dashboard) #nav-sidebar .module table tbody tr:has(th a[href*="import-tuition-fee"]) {
       display: table-row !important;
       visibility: visible !important;
     }
@@ -1622,18 +1626,21 @@
         const statsURL = "{% url 'meals:statistics' %}";
         const debtURL  = "{% url 'meals:student_payment_edit' %}";
         const importURL = "{% url 'meals:import_payments' %}";
+        const importTuitionURL = "{% url 'meals:import_tuition_fee' %}";
         const bulkPriceURL = "{% url 'meals:bulk_meal_price_update' %}";
         const statsText= "{% trans 'Thống kê' %}";
         const debtText = "{% trans 'Chỉnh sửa công nợ' %}";
         const importText = "{% trans 'Import tiền đã đóng' %}";
+        const importTuitionText = "{% trans 'Import học phí' %}";
         const bulkPriceText = "{% trans 'Cập nhật giá ăn hàng loạt' %}";
 
         tbody.insertBefore(makeRow(debtURL, debtText, 'row2'), tbody.firstChild);
         tbody.insertBefore(makeRow(statsURL, statsText, 'row1'), tbody.firstChild);
         
-        // Thêm "Import tiền đã đóng" và "Cập nhật giá ăn hàng loạt" vào cuối danh sách
+        // Thêm "Import tiền đã đóng", "Import học phí" và "Cập nhật giá ăn hàng loạt" vào cuối danh sách
         tbody.appendChild(makeRow(importURL, importText, '', 'row3'));
-        tbody.appendChild(makeRow(bulkPriceURL, bulkPriceText, '', 'row4'));
+        tbody.appendChild(makeRow(importTuitionURL, importTuitionText, '', 'row4'));
+        tbody.appendChild(makeRow(bulkPriceURL, bulkPriceText, '', 'row5'));
       }
 
       // Update captions

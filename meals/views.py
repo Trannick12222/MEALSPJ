@@ -1824,6 +1824,118 @@ def import_payments_view(request):
     return TemplateResponse(request, "admin/meals/import_payments.html", context)
 
 @login_required
+@permission_required('meals.add_studentpayment', raise_exception=True)
+def import_tuition_fee_view(request):
+    """View để import học phí từ file Excel"""
+    from django.contrib import messages
+    from django.shortcuts import redirect
+    from django.template.response import TemplateResponse
+    from .admin import TuitionFeeImportForm
+    from .models import ClassRoom, Student, StudentPayment, MealPrice
+    import openpyxl
+    from decimal import Decimal
+    
+    if request.method == 'POST':
+        form = TuitionFeeImportForm(request.POST, request.FILES)
+        if form.is_valid():
+            month = form.cleaned_data['month']
+            term = form.cleaned_data['term']
+            classroom_id = form.cleaned_data['classroom']
+            
+            # Lấy classroom object từ ID
+            try:
+                classroom = ClassRoom.objects.get(id=classroom_id)
+            except ClassRoom.DoesNotExist:
+                messages.error(request, "Lớp học không tồn tại.")
+                return redirect('meals:import_tuition_fee')
+            
+            wb = openpyxl.load_workbook(request.FILES['file'])
+            sheet = wb.active
+
+            overridden = []
+            created_count = 0
+            updated_count = 0
+
+            for row in sheet.iter_rows(min_row=2, values_only=True):
+                student_name, raw_tuition_fee = row[:2]
+                if not student_name or raw_tuition_fee is None:
+                    continue
+
+                # parse số tiền (loại bỏ dấu phẩy nếu có)
+                tuition_fee = Decimal(str(raw_tuition_fee).replace(",", ""))
+
+                try:
+                    stu = Student.objects.get(classroom=classroom, name=student_name.strip())
+                except Student.DoesNotExist:
+                    # bỏ qua những tên không khớp
+                    continue
+
+                # kiểm tra overwrite
+                existed = StudentPayment.objects.filter(student=stu, month=month).exists()
+                if existed:
+                    overridden.append(student_name)
+
+                # 1) Xác định meal_price_id cho record mới
+                # Lấy từ StudentPayment gần nhất, nếu không có thì lấy từ MealPrice có effective_date gần nhất
+                prior = (StudentPayment.objects
+                        .filter(student=stu)
+                        .exclude(month=month)
+                        .order_by('-month')
+                        .first())
+                if prior:
+                    # Sử dụng meal_price_id từ tháng trước
+                    meal_price_id = prior.meal_price_id
+                else:
+                    # Lấy MealPrice có effective_date gần nhất
+                    latest_meal_price = MealPrice.objects.order_by('-effective_date').first()
+                    meal_price_id = latest_meal_price.id if latest_meal_price else 1
+
+                # 2) Tạo mới hoặc update
+                sp, created = StudentPayment.objects.get_or_create(
+                    student=stu,
+                    month=month,
+                    defaults={
+                        'amount_paid': Decimal('0'),  # Mặc định = 0 khi tạo mới
+                        'tuition_fee': tuition_fee,
+                        'meal_price_id': meal_price_id,
+                    }
+                )
+                if not created:
+                    # Nếu đã tồn tại, chỉ cập nhật tuition_fee
+                    sp.tuition_fee = tuition_fee
+                    updated_count += 1
+                else:
+                    created_count += 1
+
+                # 3) Lưu để tính lại remaining_balance
+                sp.save()
+
+            # Recalc toàn bộ bảng cho những học sinh được import
+            imported_students = Student.objects.filter(classroom=classroom, name__in=[row[0] for row in sheet.iter_rows(min_row=2, values_only=True) if row[0]])
+            for student in imported_students:
+                student_payments = StudentPayment.objects.filter(student=student).order_by('month')
+                for p in student_payments:
+                    p.save()
+
+            if overridden:
+                messages.warning(
+                    request,
+                    f"Đã cập nhật học phí cho: {', '.join(overridden)}"
+                )
+            
+            success_msg = f"Import thành công: Tạo mới {created_count} bản ghi, cập nhật {updated_count} bản ghi học phí."
+            messages.success(request, success_msg)
+            return redirect('admin:meals_studentpayment_changelist')
+    else:
+        form = TuitionFeeImportForm()
+
+    context = {
+        'form': form,
+        'title': "Import học phí học sinh"
+    }
+    return TemplateResponse(request, "admin/meals/import_tuition_fee.html", context)
+
+@login_required
 def get_classrooms_by_term_view(request):
     """API endpoint để lấy danh sách lớp theo niên khóa"""
     from django.http import JsonResponse

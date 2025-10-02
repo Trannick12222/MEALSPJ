@@ -40,6 +40,8 @@ urlpatterns = [
          name='ajax_load_meal_stats'),
     # Import payments
     path('import-payments/', login_required(views.import_payments_view), name='import_payments'),
+    # Import tuition fee
+    path('import-tuition-fee/', login_required(views.import_tuition_fee_view), name='import_tuition_fee'),
     path('ajax/get-classrooms-by-term/', login_required(views.get_classrooms_by_term_view), name='get_classrooms_by_term'),
     
     # Bulk meal price update
